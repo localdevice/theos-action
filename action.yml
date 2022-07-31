@@ -82,7 +82,7 @@ runs:
       if: inputs.cache != 'true' || steps.theos-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        rm rf ${{ inputs.theos-dir }}
+        rm -rf ${{ inputs.theos-dir }}
         git clone --recursive ${{ inputs.theos-src }} ${{ inputs.theos-dir }}
         cd ${{ inputs.theos-dir }}
         git -C ${{ inputs.theos-dir }} checkout ${{ inputs.theos-ref }}
