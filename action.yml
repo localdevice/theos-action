@@ -70,7 +70,7 @@ runs:
       shell: bash
       if: runner.os == 'macOS'
       run: |
-        brew install ldid make
+        sudo apt install ldid make
         echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
     
     - name: prepare environment
