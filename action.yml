@@ -57,14 +57,7 @@ runs:
       if: inputs.cache == 'true'
       with:
         path: ${{ inputs.cache-dir-theos }}
-        key: ${{ runner.os }}-${{ steps.information.outputs.theos }}-theos
-    
-    - uses: actions/cache@v3
-      id: theos-sdks-cache
-      if: inputs.cache == 'true'
-      with:
-        path: ${{ inputs.cache-dir-sdks }}
-        key: ${{ runner.os }}-${{ steps.information.outputs.theos-sdks }}-theos
+        key: ${{ runner.os }}-${{ steps.information.outputs.theos }}-theos2
         
     - name: Install Theos dependencies
       shell: bash
@@ -93,15 +86,9 @@ runs:
       run: |
         . /etc/lsb-release
         mkdir -p ${{ inputs.theos-dir }}/toolchain/linux/iphone ${{ inputs.theos-dir }}/toolchain/swift
-        TMP=$(mktemp -d)
-        (
-          cd $TMP
-          wget -q https://github.com/CRKatri/llvm-project/releases/download/swift-5.3.2-RELEASE/swift-5.3.2-RELEASE-ubuntu${DISTRIB_RELEASE}.tar.zst -O swift-5.3.2-RELEASE.tar.zst
-          tar -xf swift-5.3.2-RELEASE.tar.zst
-          rsync -aWlHh --inplace swift-5.3.2-RELEASE*/* ${{ inputs.theos-dir }}/toolchain/linux/iphone
-        )
+        curl -sL https://github.com/kabiroberai/swift-toolchain-linux/releases/download/v2.1.0/swift-5.6.1-ubuntu${DISTRIB_RELEASE}.tar.xz \
+          | tar -xJf - -C ${{ inputs.theos-dir }}/toolchain
         ln -s ${{ inputs.theos-dir }}/toolchain/linux/iphone ${{ inputs.theos-dir }}/toolchain/swift
-        rm -r $TMP
 
     - name: restore theos from cache
       if: inputs.cache == 'true' && steps.theos-cache.outputs.cache-hit == 'true' && inputs.cache-dir-theos != inputs.theos-dir
@@ -114,20 +101,20 @@ runs:
       shell: bash
       run: |
         sudo rsync -alHh --inplace ${{ inputs.theos-dir }} ${{ inputs.cache-dir-theos }}/
+    
+    - uses: actions/cache@v3
+      id: theos-sdks-cache
+      if: inputs.cache == 'true'
+      with:
+        path: ${{ inputs.cache-dir-sdks }}
+        key: ${{ runner.os }}-${{ steps.information.outputs.theos-sdks }}-theos
 
     - name: get sdks (uncached)
       if: inputs.cache != 'true' || steps.theos-sdks-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        cd ${{ inputs.theos-dir }}/sdks
-        TMP=$(mktemp -d)
-        (
-          cd $TMP
-          wget -q -O ${{ inputs.theos-sdks-ref }}.tar.gz ${{ inputs.theos-sdks }}/archive/${{ inputs.theos-sdks-ref }}.tar.gz
-          tar -xf ${{ inputs.theos-sdks-ref }}.tar.gz
-          mv *-${{ inputs.theos-sdks-ref }}/*.sdk ${{ inputs.theos-dir }}/sdks  
-        )
-        rm -rf $TMP
+        rm -rf ${{ inputs.theos-dir }}/sdks/* 
+        curl -sL ${{ inputs.theos-sdks }}/archive/${{ inputs.theos-sdks-ref }}.tar.gz | tar -xzf - --strip-components=1 -C ${{ inputs.theos-dir }}/sdks
     
     - name: restore theos sdks from cache
       if: inputs.cache == 'true' && steps.theos-sdks-cache.outputs.cache-hit == 'true' && inputs.cache-dir-sdks != format('{0}/{1}', inputs.theos-dir, 'sdks')
